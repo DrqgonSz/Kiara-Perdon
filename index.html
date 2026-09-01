@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Perdón, Kiara</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Karla:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream: #FBF2EA;
+    --cream-deep: #F3E4D8;
+    --wine: #6E2A3B;
+    --wine-deep: #4A1B26;
+    --wine-soft: #A8586B;
+    --leaf: #5C6B4C;
+    --leaf-soft: #869577;
+    --ink: #2E2521;
+    --gold: #C29A5B;
+  }
+
+  *{ box-sizing: border-box; }
+
+  html, body{
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+    background: var(--cream);
+    color: var(--ink);
+    font-family: 'Karla', sans-serif;
+    overflow-x: hidden;
+  }
+
+  body{
+    min-height: 100vh;
+    position: relative;
+  }
+
+  /* ---------- Decorative background flowers ---------- */
+  .field{
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .field svg{
+    position: absolute;
+  }
+
+  /* ---------- Layout ---------- */
+  .stage{
+    position: relative;
+    z-index: 2;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 8vh 6vw 14vh;
+    text-align: center;
+  }
+
+  .eyebrow-flower{
+    width: 46px;
+    height: 46px;
+    margin-bottom: 1.6rem;
+  }
+
+  h1{
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 600;
+    font-size: clamp(2.6rem, 7vw, 4.6rem);
+    line-height: 1.08;
+    margin: 0 0 1.3rem;
+    color: var(--wine-deep);
+    max-width: 14ch;
+  }
+
+  h1 em{
+    font-style: italic;
+    color: var(--wine);
+  }
+
+  .note{
+    max-width: 46ch;
+    font-size: clamp(1.02rem, 2vw, 1.18rem);
+    line-height: 1.65;
+    color: #4a3d36;
+    margin: 0 0 3rem;
+  }
+
+  .buttons{
+    display: flex;
+    gap: 1.4rem;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  button{
+    font-family: 'Karla', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 600;
+    padding: 0.95rem 2.3rem;
+    border-radius: 999px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+  }
+
+  #yesBtn{
+    background: var(--wine);
+    color: var(--cream);
+    box-shadow: 0 8px 22px rgba(110,42,59,0.28);
+  }
+
+  #yesBtn:hover{
+    transform: translateY(-2px);
+    box-shadow: 0 12px 26px rgba(110,42,59,0.34);
+  }
+
+  #noBtn{
+    background: transparent;
+    color: var(--wine);
+    border-color: var(--wine-soft);
+    position: relative;
+  }
+
+  #noBtn.fleeing{
+    position: fixed;
+    z-index: 50;
+    transition: top 0.28s cubic-bezier(.2,.9,.3,1.3), left 0.28s cubic-bezier(.2,.9,.3,1.3);
+  }
+
+  .tally{
+    margin-top: 1.6rem;
+    min-height: 1.4em;
+    font-size: 0.92rem;
+    color: var(--wine-soft);
+    font-style: italic;
+  }
+
+  /* ---------- Resolved state ---------- */
+  .stage.resolved .pre-resolve{
+    display: none;
+  }
+
+  .resolution{
+    display: none;
+    max-width: 40ch;
+  }
+
+  .stage.resolved .resolution{
+    display: block;
+    animation: bloom 0.6s ease forwards;
+  }
+
+  @keyframes bloom{
+    from{ opacity: 0; transform: scale(0.94); }
+    to{ opacity: 1; transform: scale(1); }
+  }
+
+  .resolution .eyebrow-flower{
+    margin: 0 auto 1.6rem;
+  }
+
+  .resolution p{
+    font-size: 1.08rem;
+    line-height: 1.7;
+    color: #4a3d36;
+  }
+
+  .signature{
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 1.3rem;
+    color: var(--wine);
+    margin-top: 1.6rem;
+  }
+
+  /* ---------- Falling petals ---------- */
+  .petal{
+    position: fixed;
+    top: -5vh;
+    z-index: 40;
+    pointer-events: none;
+    animation: fall linear forwards;
+  }
+
+  @keyframes fall{
+    to{
+      transform: translateY(110vh) rotate(var(--spin));
+      opacity: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    #noBtn.fleeing{ transition: none; }
+    .petal{ animation: none; display: none; }
+    .stage.resolved .resolution{ animation: none; }
+  }
+
+  @media (max-width: 480px){
+    .buttons{ gap: 1rem; }
+    button{ padding: 0.85rem 1.8rem; font-size: 0.98rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="field" id="field" aria-hidden="true"></div>
+
+<main class="stage" id="stage">
+
+  <div class="pre-resolve">
+    <svg class="eyebrow-flower" viewBox="0 0 60 60" aria-hidden="true">
+      <use href="#flowerMark"></use>
+    </svg>
+
+    <h1>¿Me perdonas,<br><em>Kiara</em>?</h1>
+
+    <p class="note">
+      No sé bien qué hice, pero sé que te dolió, y eso ya me basta para
+      sentirlo de verdad. Eres de las personas que más quiero y no me gusta
+      nada esta distancia. ¿Me escribes porfa?
+    </p>
+
+    <div class="buttons">
+      <button id="yesBtn">Sí, te perdono</button>
+      <button id="noBtn">No</button>
+    </div>
+
+    <p class="tally" id="tally"></p>
+  </div>
+
+  <div class="resolution">
+    <svg class="eyebrow-flower" viewBox="0 0 60 60" aria-hidden="true">
+      <use href="#flowerMark"></use>
+    </svg>
+    <p>
+      Gracias esnerio. Prometo poner más atención a lo
+      que te hace daño y cuidar mejor de todo esto, aunque el botón de "no"
+      tampoco es que te haya dejado muchas opciones.
+    </p>
+    <p class="signature">Con cariño, Yael</p>
+  </div>
+
+</main>
+
+<!-- Reusable flower symbol -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="flowerMark" viewBox="0 0 60 60">
+      <g fill="#6E2A3B">
+        <path d="M30 30 C30 30 22 16 30 6 C38 16 30 30 30 30Z"/>
+        <path d="M30 30 C30 30 44 22 54 30 C44 38 30 30 30 30Z"/>
+        <path d="M30 30 C30 30 38 44 30 54 C22 44 30 30 30 30Z"/>
+        <path d="M30 30 C30 30 16 38 6 30 C16 22 30 30 30 30Z"/>
+      </g>
+      <circle cx="30" cy="30" r="5.5" fill="#C29A5B"/>
+    </symbol>
+  </defs>
+</svg>
+
+<script>
+(function(){
+  // ---------- Build scattered background flowers ----------
+  const field = document.getElementById('field');
+  const wine = ['#6E2A3B', '#8C3B50', '#4A1B26'];
+  const leaf = ['#5C6B4C', '#869577'];
+
+  function petalFlower(size, color, opacity){
+    return `
+      <svg width="${size}" height="${size}" viewBox="0 0 60 60" style="opacity:${opacity}">
+        <g fill="${color}">
+          <path d="M30 30 C30 30 22 16 30 6 C38 16 30 30 30 30Z"/>
+          <path d="M30 30 C30 30 44 22 54 30 C44 38 30 30 30 30Z"/>
+          <path d="M30 30 C30 30 38 44 30 54 C22 44 30 30 30 30Z"/>
+          <path d="M30 30 C30 30 16 38 6 30 C16 22 30 30 30 30Z"/>
+        </g>
+        <circle cx="30" cy="30" r="5.5" fill="#C29A5B" opacity="${opacity}"/>
+      </svg>`;
+  }
+
+  function leafShape(size, color, opacity, rot){
+    return `
+      <svg width="${size}" height="${size*0.5}" viewBox="0 0 40 20" style="opacity:${opacity}; transform: rotate(${rot}deg)">
+        <path d="M2 10 C10 -2 30 -2 38 10 C30 22 10 22 2 10Z" fill="${color}"/>
+      </svg>`;
+  }
+
+  // Fixed but organic-feeling placements (corners + edges, not a grid)
+  const spots = [
+    {x:'-4%',  y:'-3%',  type:'flower', size:150, o:0.9},
+    {x:'82%',  y:'-6%',  type:'flower', size:110, o:0.8},
+    {x:'-6%',  y:'70%',  type:'flower', size:170, o:0.85},
+    {x:'90%',  y:'62%',  type:'flower', size:140, o:0.8},
+    {x:'6%',   y:'40%',  type:'leaf',   size:70,  o:0.5, rot:20},
+    {x:'86%',  y:'32%',  type:'leaf',   size:60,  o:0.45, rot:-30},
+    {x:'40%',  y:'-5%',  type:'leaf',   size:55,  o:0.4, rot:100},
+    {x:'50%',  y:'92%',  type:'leaf',   size:65,  o:0.4, rot:-10},
+    {x:'14%',  y:'88%',  type:'flower', size:80,  o:0.55},
+    {x:'70%',  y:'86%',  type:'flower', size:70,  o:0.5}
+  ];
+
+  spots.forEach((s, i) => {
+    const wrap = document.createElement('div');
+    wrap.style.position = 'absolute';
+    wrap.style.left = s.x;
+    wrap.style.top = s.y;
+    const color = s.type === 'flower' ? wine[i % wine.length] : leaf[i % leaf.length];
+    wrap.innerHTML = s.type === 'flower'
+      ? petalFlower(s.size, color, s.o)
+      : leafShape(s.size, color, s.o, s.rot || 0);
+    field.appendChild(wrap);
+  });
+
+  // ---------- "No" button flees ----------
+  const noBtn = document.getElementById('noBtn');
+  const yesBtn = document.getElementById('yesBtn');
+  const tally = document.getElementById('tally');
+  const stage = document.getElementById('stage');
+
+  const phrases = [
+    'casi la tienes…',
+    'ese botón no coopera',
+    'inténtalo de nuevo',
+    'no va a pasar, jaja',
+    'de verdad quiere que digas que sí',
+    'sigue intentando'
+  ];
+  let attempts = 0;
+
+  function moveNoButton(){
+    const btnRect = noBtn.getBoundingClientRect();
+    const w = btnRect.width || 120;
+    const h = btnRect.height || 50;
+    const margin = 16;
+    const maxX = window.innerWidth - w - margin;
+    const maxY = window.innerHeight - h - margin;
+    const newX = Math.max(margin, Math.random() * maxX);
+    const newY = Math.max(margin, Math.random() * maxY);
+
+    if(!noBtn.classList.contains('fleeing')){
+      noBtn.classList.add('fleeing');
+    }
+    noBtn.style.left = newX + 'px';
+    noBtn.style.top = newY + 'px';
+
+    attempts++;
+    tally.textContent = attempts === 1
+      ? 'lo intentaste una vez…'
+      : `lo has intentado ${attempts} veces`;
+    if(attempts >= 3 && attempts % 2 === 1){
+      tally.textContent = phrases[attempts % phrases.length];
+    }
+  }
+
+  noBtn.addEventListener('mouseenter', moveNoButton);
+  noBtn.addEventListener('click', (e) => { e.preventDefault(); moveNoButton(); });
+  noBtn.addEventListener('touchstart', (e) => { e.preventDefault(); moveNoButton(); }, {passive:false});
+
+  // ---------- "Sí" resolves ----------
+  yesBtn.addEventListener('click', () => {
+    stage.classList.add('resolved');
+    dropPetals(26);
+  });
+
+  function dropPetals(count){
+    for(let i = 0; i < count; i++){
+      setTimeout(() => {
+        const p = document.createElement('div');
+        p.className = 'petal';
+        const size = 14 + Math.random() * 16;
+        const left = Math.random() * 100;
+        const duration = 3.5 + Math.random() * 2.5;
+        const spin = (Math.random() > 0.5 ? 1 : -1) * (180 + Math.random()*180);
+        p.style.left = left + 'vw';
+        p.style.setProperty('--spin', spin + 'deg');
+        p.style.animationDuration = duration + 's';
+        const color = wine[i % wine.length];
+        p.innerHTML = `<svg width="${size}" height="${size}" viewBox="0 0 20 20">
+          <path d="M10 10 C10 10 4 5 10 0 C16 5 10 10 10 10Z" fill="${color}"/>
+        </svg>`;
+        field.appendChild(p);
+        setTimeout(() => p.remove(), duration * 1000 + 200);
+      }, i * 90);
+    }
+  }
+})();
+</script>
+
+</body>
+</html>
